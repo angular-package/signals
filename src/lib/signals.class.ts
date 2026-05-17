@@ -179,7 +179,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @returns {(T[K] | undefined)} The returned value is the current value of the signal. If the specified key does not correspond to an existing signal in the collection, this method will return undefined.
    */
   public get<K extends keyof T>(key: K): T[K] | undefined {
-    return this.#data(key).get(key) as T[K] | undefined;
+    return this.#data(key).get(key)?.() as T[K] | undefined;
   }
 
   /**
