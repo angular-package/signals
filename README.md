@@ -57,7 +57,9 @@ import { SignalsChannel } from '@angular-package/signals';
 
 ### Signals
 
-The `Signals` class provides a structured way to manage a collection of signals, which are reactive data sources that can be observed for changes. It allows you to add, remove, update, and retrieve signals based on keys, as well as create effects that run when specific signals change. The class is designed to be flexible and type-safe, making it easier to work with reactive data in Angular applications.
+The `Signals` class provides a structured way to manage a collection of signals, which are reactive data sources that can be observed for changes.
+It allows you to add, remove, update, and retrieve signals based on keys, as well as create effects that run when specific signals change.
+The class is designed to be flexible and type-safe, making it easier to work with reactive data in Angular applications.
 
 ```typescript
 import { Signals } from '@angular-package/signals'; 
