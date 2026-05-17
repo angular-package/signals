@@ -24,15 +24,17 @@ describe(() => {
       }
     );
   });
-  it(`should emit on set`, (done) => {
-    signalsChannel.$onSet.subscribe(payload => {
-      expect(payload).toEqual({
-        key: 'age',
-        value: 37
+  it(`should emit on set`, async () => {
+    await new Promise<void>(resolve => {
+      signalsChannel.$onSet.subscribe(payload => {
+        expect(payload).toEqual({
+          key: 'age',
+          value: 37
+        });
       });
-      // done();
+      signalsChannel.set('age', 37);
+      resolve();
     });
-    signalsChannel.set('age', 37);
   });
   it(`should emit on set with custom configuration`, async () => {
     await new Promise<void>(resolve => {
