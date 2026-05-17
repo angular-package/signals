@@ -5,8 +5,8 @@ let signalsChannel = new SignalsChannel({
   'age': 27
   }, {
     emitter: {
-      key: 'key',
-      value: 'value'
+      key: 'key' as string,
+      value: 'value' as string
     }
   }
 );
@@ -34,37 +34,41 @@ describe(() => {
     });
     signalsChannel.set('age', 37);
   });
-  it(`should emit on set with custom configuration`, (done) => {
-    // signalsChannel.configure({
-    //   emitter: {
-    //     key: 'customKey',
-    //     value: 'customValue'
-    //   }
-    // });
-    // signalsChannel.$onSet.subscribe(payload => {
-    //   expect(payload).toEqual({
-    //     customKey: 'age',
-    //     customValue: 37
-    //   });
-    //   done();
-    // });
-    // signalsChannel.set('age', 37);
+  it(`should emit on set with custom configuration`, async () => {
+    await new Promise<void>(resolve => {
+      signalsChannel.configure({
+        emitter: {
+          key: 'customKey',
+          value: 'customValue'
+        }
+      });
+      signalsChannel.$onSet.subscribe(payload => {
+        expect(payload).toEqual({
+          customKey: 'age',
+          customValue: 37
+        });
+      });
+      signalsChannel.set('age', 37);
+      resolve();
+    });
   });
-  it(`should emit on set with custom configuration and custom emitter keys`, (done) => {
-    // signalsChannel.configure({
-    //   emitter: {
-    //     key: 'customKey',
-    //     value: 'customValue'
-    //   }
-    // });
-    // signalsChannel.$onSet.subscribe(payload => {
-    //   expect(payload).toEqual({
-    //     customKey: 'age',
-    //     customValue: 37
-    //   });
-    //   done();
-    // });
-    // signalsChannel.set('age', 37);
+  it(`should emit on set with custom configuration and custom emitter keys`, async () => {
+    await new Promise<void>(resolve => {
+      signalsChannel.configure({
+        emitter: {
+          key: 'customKey',
+          value: 'customValue'
+        }
+      });
+      signalsChannel.$onSet.subscribe(payload => {
+        expect(payload).toEqual({
+          customKey: 'age',
+          customValue: 37
+        });
+        resolve();
+      });
+      signalsChannel.set('age', 37);
+    });
   });
 });
 
