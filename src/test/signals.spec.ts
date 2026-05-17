@@ -15,16 +15,16 @@ describe(() => {
   });
   it(`should add a signal`, () => {
     signals.add('age', signal(37));
-    expect(signals.get('age')?.()).toBe(37);
+    expect(signals.signal('age')?.()).toBe(37);
   });
   it(`should remove a signal`, () => {
     signals.remove('age');
-    expect(signals.get('age')).toBeUndefined();
+    expect(signals.signal('age')).toBeUndefined();
   });
   it(`should update a signal`, () => {
     signals.add('age', signal(37));
     signals.update('age', 47);
-    expect(signals.get('age')?.()).toBe(47);
+    expect(signals.signal('age')?.()).toBe(47);
   });
   it(`should update multiple signals`, () => {
     signals.add('age', signal(37));
@@ -32,8 +32,8 @@ describe(() => {
       ['age', 47],
       ['firstName', 'John']
     ]);
-    expect(signals.get('age')?.()).toBe(47);
-    expect(signals.get('firstName')?.()).toBe('John');
+    expect(signals.signal('age')?.()).toBe(47);
+    expect(signals.signal('firstName')?.()).toBe('John');
   });
   it(`should clear all signals`, () => {
     signals.clear();
@@ -132,28 +132,28 @@ describe(() => {
       ['age', signal(37)],
       ['firstName', signal('John')]
     ]);
-    expect(signals.get('age')?.()).toBe(37);
-    expect(signals.get('firstName')?.()).toBe('John');
+    expect(signals.signal('age')?.()).toBe(37);
+    expect(signals.signal('firstName')?.()).toBe('John');
   });
   it(`should not add multiple signals if the keys already exist`, () => {
     signals.addMultiple([
       ['age', signal(37)],
       ['firstName', signal('John')]
     ]);
-    expect(signals.get('age')?.()).toBe(27);
-    expect(signals.get('firstName')?.()).toBe('Mark');
+    expect(signals.signal('age')?.()).toBe(27);
+    expect(signals.signal('firstName')?.()).toBe('Mark');
   });
   it(`should not add a signal if the key already exists`, () => {
     signals.add('age', signal(37));
-    expect(signals.get('age')?.()).toBe(27);
+    expect(signals.signal('age')?.()).toBe(27);
   });
   it(`should not add a signal if the key already exists with a non-signal value`, () => {
     signals.add('age', 37);
-    expect(signals.get('age')?.()).toBe(27);
+    expect(signals.signal('age')?.()).toBe(27);
   });
   it(`should not add a signal if the key already exists with a non-signal value and the initial value is a signal`, () => {
     signals.add('age', 37);
     signals.add('age', signal(37));
-    expect(signals.get('age')?.()).toBe(27);
+    expect(signals.signal('age')?.()).toBe(27);
   });
 });
