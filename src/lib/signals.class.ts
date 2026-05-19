@@ -34,7 +34,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @readonly
    * @type {*}
    */
-  public get value() {
+  public get value(): T {
     return this.entries().reduce((acc, [key, value]) => {
       acc[key] = value;
       return acc;
@@ -256,15 +256,14 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @returns {boolean} True if the value was set, false otherwise.
    */
   public set<K extends keyof T>(key: K, value: T[K] | WritableSignal<T[K]>): boolean {
-    const sig = this.signal(key);
-    if (!sig) return false;
+    const signal = this.signal(key);
+    if (!signal) return false;
 
-    sig.set(
+    signal.set(
       typeof value === 'function' && typeof (value as any).set === 'function'
         ? (value as WritableSignal<T[K]>)()
         : value as T[K]
     );
-
     return true;
   }
 
@@ -280,6 +279,32 @@ export class Signals<T extends Record<PropertyKey, any>>
   }
 
   /**
+   * @description The `signalsEntries` method retrieves the entries of all signals in the collection, where each entry is a tuple containing a key and its corresponding writable signal. This method provides a convenient way to access both the keys and their associated signals, allowing you to work with the signals directly while still having access to their keys for reference.
+   * @public
+   * @returns {{ [Key in keyof T]: [Key, WritableSignal<T[Key]>] }[keyof T][]}
+   */
+  public signalsEntries(): { [Key in keyof T]: [Key, WritableSignal<T[Key]>] }[keyof T][] {
+    return this.keys().map(
+      key => [key, this.signal(key) as WritableSignal<T[typeof key]>]
+    ) as { [Key in keyof T]: [Key, WritableSignal<T[Key]>] }[keyof T][];
+  }
+
+  /**
+   * @description Iterates over each signal in the collection and runs the provided callback function, passing the writable signal and its key as arguments. This method allows you to work directly with the signals themselves, enabling you to set or update their values within the callback function while still having access to their keys for reference.
+   * @public
+   * @template {keyof T} K
+   * @param {(signal: WritableSignal<T[K]>, key: K) => void} callbackfn
+   * @returns {void) => this}
+   */
+  public signalsForEach<K extends keyof T>(
+    callbackfn: (signal: WritableSignal<T[K]>, key: K) => void
+  ) {
+    return this.keys().forEach(
+      key => callbackfn(this.signal(key) as WritableSignal<T[K]>, key as K)
+    ), this;
+  }
+
+  /**
    * @description Updates the value of a specific signal in the collection. If the signal with the specified key does not exist, this method will return false and will not perform any operation. If the signal exists, it will set the new value (unwrapping it if it's a writable signal) and return true.
    * @public
    * @template {keyof T} K
@@ -289,6 +314,21 @@ export class Signals<T extends Record<PropertyKey, any>>
    */
   public update<K extends keyof T>(key: K, value: T[K] | WritableSignal<T[K]>): boolean {
     return this.has(key) ? this.set(key, value) : false;
+  }
+
+  /**
+   * @description Updates the values of multiple signals in the collection based on the provided object, where each key corresponds to a signal and its value is the new value for that signal. For each key in the provided object, if it corresponds to an existing signal in the collection, its value will be updated to the new value (unwrapping it if it's a writable signal). If a key does not correspond to an existing signal, it will be added to the collection. This method returns the instance of the signal collection after attempting to update all provided values.
+   * @public
+   * @param {Partial<T>} value
+   * @returns {this}
+   */
+  public updateValue(value: Partial<T>): this {
+    return Object.entries(value).forEach(([key, val]) => {
+      const typedKey = key as keyof T;
+      if (this.has(typedKey)) {
+        this.set(typedKey, val as T[keyof T]);
+      }
+    }), this;
   }
 
   /**
