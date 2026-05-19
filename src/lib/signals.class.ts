@@ -34,9 +34,9 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @readonly
    * @type {*}
    */
-  public get value(): T {
-    return this.entries().reduce((acc, [key, value]) => {
-      acc[key] = value;
+  public get value() {
+    return Array.from(this.entries()).reduce((acc, [key, signal]) => {
+      acc[key] = signal();
       return acc;
     }, {} as T);
   }
@@ -131,7 +131,7 @@ export class Signals<T extends Record<PropertyKey, any>>
   public effect<K extends keyof T>(callbackfn: (key: K, value?: T[K]) => void, keys: K[] = this.keys() as K[]) {
     keys.forEach(key => {
       effect(() => {
-        const value = this.get(key);
+        const value = this.get<K>(key)?.();
         callbackfn(key, value);
       });
     });
@@ -146,7 +146,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @returns {void) => void}
    */
   public effectForKey<K extends keyof T>(key: K, callbackfn: (value: T[K]) => void) {
-    effect(() => callbackfn(this.get(key) as T[K]));
+    effect(() => callbackfn(this.get(key)?.() as T[K]));
   }
 
   /**
@@ -154,10 +154,8 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @public
    * @returns {[keyof T, T[keyof T]][]}
    */
-  public entries(): { [Key in keyof T]: [Key, T[Key]] }[keyof T][] {
-    return this.keys().map(
-      key => [key, this.get(key) as T[typeof key]]
-    ) as { [Key in keyof T]: [Key, T[Key]] }[keyof T][];
+  public entries(): [keyof T, T[keyof T]][] {
+    return Array.from(this.#signals.entries()) as [keyof T, T[keyof T]][];
   }
 
   /**
@@ -169,7 +167,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    */
   public forEach<K extends keyof T>(callbackfn: (value: T[K], key: K) => void) {
     return this.keys().forEach(
-      key => callbackfn(this.get(key) as T[K], key as K)
+      key => callbackfn(this.get(key)?.() as T[K], key as K)
     ), this;
   }
 
@@ -255,16 +253,12 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @param {(T[K] | WritableSignal<T[K]>)} value The value to set for the signal.
    * @returns {boolean} True if the value was set, false otherwise.
    */
-  public set<K extends keyof T>(key: K, value: T[K] | WritableSignal<T[K]>): boolean {
-    const signal = this.signal(key);
-    if (!signal) return false;
-
-    signal.set(
+  public set<K extends keyof T>(key: K, value: T[K] | WritableSignal<T[K]>) {
+    return this.get(key)?.set(
       typeof value === 'function' && typeof (value as any).set === 'function'
         ? (value as WritableSignal<T[K]>)()
         : value as T[K]
-    );
-    return true;
+    ), true;
   }
 
   /**
@@ -275,33 +269,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @returns {(WritableSignal<T[K]> | undefined)} The signal associated with the specified key, or undefined if it does not exist.
    */
   public signal<K extends keyof T>(key: K): WritableSignal<T[K]> | undefined {
-    return this.#data(key).get(key);
-  }
-
-  /**
-   * @description The `signalEntries` method retrieves the entries of all signals in the collection, where each entry is a tuple containing a key and its corresponding writable signal. This method provides a convenient way to access both the keys and their associated signals, allowing you to work with the signals directly while still having access to their keys for reference.
-   * @public
-   * @returns {{ [Key in keyof T]: [Key, WritableSignal<T[Key]>] }[keyof T][]}
-   */
-  public signalEntries(): { [Key in keyof T]: [Key, WritableSignal<T[Key]>] }[keyof T][] {
-    return this.keys().map(
-      key => [key, this.signal(key) as WritableSignal<T[typeof key]>]
-    ) as { [Key in keyof T]: [Key, WritableSignal<T[Key]>] }[keyof T][];
-  }
-
-  /**
-   * @description Iterates over each signal in the collection and runs the provided callback function, passing the writable signal and its key as arguments. This method allows you to work directly with the signals themselves, enabling you to set or update their values within the callback function while still having access to their keys for reference.
-   * @public
-   * @template {keyof T} K
-   * @param {(signal: WritableSignal<T[K]>, key: K) => void} callbackfn
-   * @returns {void) => this}
-   */
-  public signalsForEach<K extends keyof T>(
-    callbackfn: (signal: WritableSignal<T[K]>, key: K) => void
-  ) {
-    return this.keys().forEach(
-      key => callbackfn(this.signal(key) as WritableSignal<T[K]>, key as K)
-    ), this;
+    return this.get(key);
   }
 
   /**
@@ -313,24 +281,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @returns {boolean}
    */
   public update<K extends keyof T>(key: K, value: T[K] | WritableSignal<T[K]>): boolean {
-    return this.has(key) ? this.set(key, value) : false;
-  }
-
-  /**
-   * @description Updates the values of multiple signals in the collection based on the provided object, where each key corresponds to a signal and its value is the new value for that signal. For each key in the provided object, if it corresponds to an existing signal in the collection, its value will be updated to the new value (unwrapping it if it's a writable signal). If a key does not correspond to an existing signal, it will be added to the collection. This method returns the instance of the signal collection after attempting to update all provided values.
-   * @public
-   * @param {Partial<T>} value
-   * @returns {this}
-   */
-  public updateValue(value: Partial<T>): this {
-    Object.entries(value).forEach(([key, val]) => {
-      const typedKey = key as keyof T;
-      if (this.has(typedKey)) {
-        this.set(typedKey, val as T[keyof T]);
-      }
-    });
-
-    return this;
+    return !this.has(key) ? false : this.set(key, value), true;
   }
 
   /**
@@ -350,7 +301,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @returns {T[keyof T][]} An array containing the current values of all signals in the collection.
    */
   public values(): T[keyof T][] {
-    return this.entries().map(([_, value]) => value);
+    return this.entries().map(([_, signal]) => signal() as T[keyof T]);
   }
 
   /**
