@@ -3,9 +3,10 @@
  */
 
 export {
+  SIGNALS_EMITTER,
+  SIGNALS_INIT,
+} from './token';
+export {
   SignalsChannel,
   Signals,
-
-  SIGNALS_INIT,
-  SIGNALS_EMITTER
 } from './lib';
