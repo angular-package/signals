@@ -35,8 +35,8 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @type {*}
    */
   public get value() {
-    return Array.from(this.entries()).reduce((acc, [key, signal]) => {
-      acc[key] = signal();
+    return this.entries().reduce((acc, [key, value]) => {
+      acc[key] = value;
       return acc;
     }, {} as T);
   }
@@ -131,7 +131,7 @@ export class Signals<T extends Record<PropertyKey, any>>
   public effect<K extends keyof T>(callbackfn: (key: K, value?: T[K]) => void, keys: K[] = this.keys() as K[]) {
     keys.forEach(key => {
       effect(() => {
-        const value = this.get<K>(key)?.();
+        const value = this.get(key);
         callbackfn(key, value);
       });
     });
@@ -146,7 +146,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @returns {void) => void}
    */
   public effectForKey<K extends keyof T>(key: K, callbackfn: (value: T[K]) => void) {
-    effect(() => callbackfn(this.get(key)?.() as T[K]));
+    effect(() => callbackfn(this.get(key) as T[K]));
   }
 
   /**
@@ -154,8 +154,10 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @public
    * @returns {[keyof T, T[keyof T]][]}
    */
-  public entries(): [keyof T, T[keyof T]][] {
-    return Array.from(this.#signals.entries()) as [keyof T, T[keyof T]][];
+  public entries(): { [Key in keyof T]: [Key, T[Key]] }[keyof T][] {
+    return this.keys().map(
+      key => [key, this.get(key) as T[typeof key]]
+    ) as { [Key in keyof T]: [Key, T[Key]] }[keyof T][];
   }
 
   /**
@@ -167,7 +169,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    */
   public forEach<K extends keyof T>(callbackfn: (value: T[K], key: K) => void) {
     return this.keys().forEach(
-      key => callbackfn(this.get(key)?.() as T[K], key as K)
+      key => callbackfn(this.get(key) as T[K], key as K)
     ), this;
   }
 
@@ -253,12 +255,17 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @param {(T[K] | WritableSignal<T[K]>)} value The value to set for the signal.
    * @returns {boolean} True if the value was set, false otherwise.
    */
-  public set<K extends keyof T>(key: K, value: T[K] | WritableSignal<T[K]>) {
-    return this.get(key)?.set(
+  public set<K extends keyof T>(key: K, value: T[K] | WritableSignal<T[K]>): boolean {
+    const sig = this.signal(key);
+    if (!sig) return false;
+
+    sig.set(
       typeof value === 'function' && typeof (value as any).set === 'function'
         ? (value as WritableSignal<T[K]>)()
         : value as T[K]
-    ), true;
+    );
+
+    return true;
   }
 
   /**
@@ -269,7 +276,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @returns {(WritableSignal<T[K]> | undefined)} The signal associated with the specified key, or undefined if it does not exist.
    */
   public signal<K extends keyof T>(key: K): WritableSignal<T[K]> | undefined {
-    return this.get(key);
+    return this.#data(key).get(key);
   }
 
   /**
@@ -281,7 +288,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @returns {boolean}
    */
   public update<K extends keyof T>(key: K, value: T[K] | WritableSignal<T[K]>): boolean {
-    return !this.has(key) ? false : this.set(key, value), true;
+    return this.has(key) ? this.set(key, value) : false;
   }
 
   /**
@@ -301,7 +308,7 @@ export class Signals<T extends Record<PropertyKey, any>>
    * @returns {T[keyof T][]} An array containing the current values of all signals in the collection.
    */
   public values(): T[keyof T][] {
-    return this.entries().map(([_, signal]) => signal() as T[keyof T]);
+    return this.entries().map(([_, value]) => value);
   }
 
   /**
