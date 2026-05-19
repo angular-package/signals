@@ -1,6 +1,6 @@
 {
   "name": "@angular-package/signals",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "@angular-package <contact@angular-package.dev>",
   "description": "A lightweight angular package for the signals store.",
   "license": "MIT",

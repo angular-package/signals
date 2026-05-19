@@ -5,8 +5,8 @@ import { filter, Observable, Subject } from "rxjs";
 // @angular-package
 import { Signals } from "./signals.class";
 // Token
-import { SIGNALS_EMITTER } from "./token/signals-emitter.token";
-import { SIGNALS_INIT } from "./token/signals-init.token";
+import { SIGNALS_EMITTER } from "../token/signals-emitter.token";
+import { SIGNALS_INIT } from "../token/signals-init.token";
 // Types
 import type { EmitPayload, SignalsSettings } from '@typedly/signals';
 /**
